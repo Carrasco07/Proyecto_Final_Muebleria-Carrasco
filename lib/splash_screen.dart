@@ -1,42 +1,67 @@
-import 'package:flutter/material.dart';
 import 'dart:async';
-import 'login_screen.dart';
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 
-class SplashScreen extends StatefulWidget {
-  const SplashScreen({super.key});
+class PantallaSplash extends StatefulWidget {
+  const PantallaSplash({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  State<PantallaSplash> createState() => _PantallaSplashState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
+class _PantallaSplashState extends State<PantallaSplash> {
   @override
   void initState() {
     super.initState();
-    // Salto al login tras 3 segundos
-    Timer(const Duration(seconds: 3), () {
-      Navigator.pushReplacement(
-        context, MaterialPageRoute(builder: (context) => const LoginScreen())
-      );
+    // Temporizador de 4 segundos antes de navegar al login
+    Timer(const Duration(seconds: 4), () {
+      if (mounted) context.go('/login');
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    // Definimos nuestra paleta Minimalista Premium
+    const Color azulGrisaceo = Color(0xFF2C3E50); 
+    const Color blancoPuro = Colors.white;
+
     return Scaffold(
-      backgroundColor: Colors.brown[50],
+      backgroundColor: azulGrisaceo, // Fondo ahora es Azul Grisáceo
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.chair_outlined, size: 100, color: Colors.brown),
-            const SizedBox(height: 20),
-            const Text(
-              "Mueblería Carrasco",
-              style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: Colors.brown),
+            // Letra "M" Gigante con estilo elegante
+            Text(
+              'M',
+              style: GoogleFonts.playfairDisplay(
+                fontSize: 120,
+                fontWeight: FontWeight.bold,
+                color: blancoPuro, // Cambio a Blanco
+              ),
+            ),
+            const SizedBox(height: 10),
+            // Nombre de la marca con tipografía Serif fina
+            Text(
+              'Mueblería Carrasco',
+              style: GoogleFonts.lora(
+                fontSize: 26,
+                color: blancoPuro, // Cambio a Blanco
+                fontStyle: FontStyle.italic,
+                letterSpacing: 1.2,
+              ),
             ),
             const SizedBox(height: 50),
-            const CircularProgressIndicator(color: Colors.brown),
+            // Indicador de carga estilizado y delgado
+            const SizedBox(
+              width: 30,
+              height: 30,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(blancoPuro),
+              ),
+            ),
           ],
         ),
       ),

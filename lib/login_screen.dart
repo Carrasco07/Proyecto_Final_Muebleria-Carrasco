@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:lottie/lottie.dart'; // Asegúrate de haber hecho 'flutter pub get'
-import 'menu_screen.dart';
+import 'package:lottie/lottie.dart'; // Asegúrate de tener lottie en tu pubspec.yaml
+import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -11,84 +12,87 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
   bool _isLoading = false;
 
-  // VENTANA EMERGENTE CON LA CALAVERITA 💀
-  void _mostrarErrorCalaverita(String mensaje) {
+  // Colores del Proyecto
+  final Color azulGrisaceo = const Color(0xFF2C3E50);
+  final Color grisSuave = const Color(0xFFF2F4F4);
+
+  // --- FUNCIÓN DE ERROR CON ANIMACIÓN ---
+  void _mostrarErrorAnimado(String mensaje) {
     showDialog(
       context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[900],
+      builder: (context) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Animación de calaverita (vía URL para no ocupar espacio en assets)
-            Lottie.network(
-              'https://assets9.lottiefiles.com/packages/lf20_T68Y4h.json',
-              height: 180,
-              repeat: true,
-              errorBuilder: (context, error, stackTrace) => const Icon(Icons.error, color: Colors.red, size: 80),
-            ),
-            const SizedBox(height: 15),
-            const Text(
-              "¡ACCESO DENEGADO!",
-              style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 22),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              mensaje,
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.white, fontSize: 16),
-            ),
-          ],
-        ),
-        actions: [
-          Center(
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-              onPressed: () => Navigator.pop(context),
-              child: const Text("REINTENTAR", style: TextStyle(color: Colors.white)),
-            ),
+        backgroundColor: Colors.white,
+        child: Padding(
+          padding: const EdgeInsets.all(25),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Animación de calavera nativa en Flutter (sin depender de LottieFiles)
+              TweenAnimationBuilder<double>(
+                tween: Tween<double>(begin: 0.8, end: 1.2),
+                duration: const Duration(milliseconds: 600),
+                curve: Curves.elasticOut,
+                builder: (context, value, child) {
+                  return Transform.scale(
+                    scale: value,
+                    child: const Text(
+                      "💀",
+                      style: TextStyle(fontSize: 80),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 20),
+              Text(
+                "¡ACCESO DENEGADO!",
+                style: GoogleFonts.montserrat(
+                  fontWeight: FontWeight.bold, 
+                  fontSize: 18, 
+                  color: Colors.redAccent
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                mensaje,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Color(0xFF7F8C8D)),
+              ),
+              const SizedBox(height: 25),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: azulGrisaceo,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("REINTENTAR", style: TextStyle(color: Colors.white)),
+                ),
+              )
+            ],
           ),
-          const SizedBox(height: 10),
-        ],
+        ),
       ),
     );
   }
 
-  // FUNCIÓN PARA VALIDAR CONTRA FIREBASE
   Future<void> _login() async {
-    // 1. Validar campos vacíos
-    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
-      _mostrarErrorCalaverita("¡No puedes dejar campos vacíos! Rellena todo o no entras.");
-      return;
-    }
-
     setState(() => _isLoading = true);
-
     try {
-      // 2. Intentar autenticar
       await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
-
-      // 3. Si es correcto, ir al menú de Mueblería Carrasco
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const MenuScreen()),
-        );
-      }
-    } on FirebaseAuthException catch (_) {
-      // 4. Si los datos están mal, sale la calaverita
-      _mostrarErrorCalaverita("Credenciales incorrectas. Solo admins de Mueblería Carrasco. 💀");
+      if (mounted) context.go('/menu');
+    } on FirebaseAuthException catch (e) {
+      _mostrarErrorAnimado("Las credenciales ingresadas son incorrectas.");
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      setState(() => _isLoading = false);
     }
   }
 
@@ -98,59 +102,84 @@ class _LoginScreenState extends State<LoginScreen> {
       backgroundColor: Colors.white,
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 30),
+          padding: const EdgeInsets.symmetric(horizontal: 40),
           child: Column(
             children: [
-              const Icon(Icons.admin_panel_settings, size: 100, color: Colors.brown),
-              const SizedBox(height: 10),
-              const Text(
-                "Mueblería Carrasco",
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.brown),
-              ),
-              const Text("Acceso Administrativo", style: TextStyle(color: Colors.grey)),
-              const SizedBox(height: 50),
-              
-              TextField(
-                controller: _emailController,
-                decoration: InputDecoration(
-                  labelText: "Correo Electrónico",
-                  prefixIcon: const Icon(Icons.email, color: Colors.brown),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
+              // Icono de administración premium y estilizado
+              Container(
+                padding: const EdgeInsets.all(25),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: azulGrisaceo.withOpacity(0.15),
+                      blurRadius: 25,
+                      spreadRadius: 5,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: azulGrisaceo.withOpacity(0.05),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.admin_panel_settings, // Un ícono más específico para un admin
+                    size: 70, 
+                    color: azulGrisaceo,
+                  ),
                 ),
               ),
               const SizedBox(height: 20),
-              
-              TextField(
-                controller: _passwordController,
-                obscureText: true,
-                decoration: InputDecoration(
-                  labelText: "Contraseña",
-                  prefixIcon: const Icon(Icons.lock, color: Colors.brown),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
+              Text(
+                "ADMINISTRACIÓN",
+                style: GoogleFonts.montserrat(
+                  letterSpacing: 4, 
+                  fontWeight: FontWeight.bold, 
+                  color: azulGrisaceo
                 ),
               ),
+              const SizedBox(height: 50),
+              _buildTextField("Correo", Icons.email_outlined, _emailController),
+              const SizedBox(height: 20),
+              _buildTextField("Contraseña", Icons.lock_outline, _passwordController, isPass: true),
               const SizedBox(height: 40),
-              
               SizedBox(
                 width: double.infinity,
                 height: 55,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.brown,
+                    backgroundColor: azulGrisaceo,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                    elevation: 0,
                   ),
                   onPressed: _isLoading ? null : _login,
-                  child: _isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text(
-                          "ENTRAR",
-                          style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-                        ),
+                  child: _isLoading 
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text("ENTRAR", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                 ),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildTextField(String label, IconData icon, TextEditingController controller, {bool isPass = false}) {
+    return TextField(
+      controller: controller,
+      obscureText: isPass,
+      decoration: InputDecoration(
+        prefixIcon: Icon(icon, color: azulGrisaceo),
+        labelText: label,
+        labelStyle: const TextStyle(color: Color(0xFF95A5A6)),
+        filled: true,
+        fillColor: grisSuave,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
       ),
     );
   }

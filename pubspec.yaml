@@ -1,5 +1,5 @@
 name: myapp
-description: "A new Flutter project for Mueblería Carrasco."
+description: "Proyecto Mueblería Carrasco"
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -9,21 +9,20 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-
-  # Conexión para Mueblería Carrasco
-  firebase_core: ^2.24.2
-  firebase_auth: ^4.15.3
-  cloud_firestore: ^4.13.6
-  lottie: ^2.7.0
+  firebase_core: ^4.7.0
+  firebase_auth: ^6.4.0
+  cloud_firestore: ^6.3.0
+  lottie: ^3.3.3
   cupertino_icons: ^1.0.8
+  google_fonts: ^6.3.2
+  go_router: ^17.2.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^5.0.0
+  flutter_lints: ^6.0.0
 
 flutter:
   uses-material-design: true
-  # Si vas a usar una calaverita animada, recuerda descomentar la sección de assets abajo
-  # assets:
-  #   - assets/calaverita.json
+  assets:
+    - assets/  # Esto cargará tu calavera.json
