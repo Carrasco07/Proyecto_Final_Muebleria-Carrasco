@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:lottie/lottie.dart';
+// import 'package:lottie/lottie.dart'; // Removido por no usarse
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart'; // Importado para formato de moneda
 
 class InventarioScreen extends StatefulWidget {
   const InventarioScreen({super.key});
@@ -75,7 +76,7 @@ class _InventarioScreenState extends State<InventarioScreen> {
                   _input("Nombre del Mueble", _nombre, Icons.chair),
                   _input("Categoría", _categoria, Icons.category_outlined),
                   Row(children: [
-                    Expanded(child: _input("Precio", _precio, Icons.attach_money, true)),
+                    Expanded(child: _input("Precio", _precio, Icons.attach_money, true, true)),
                     const SizedBox(width: 10),
                     Expanded(child: _input("Stock", _stock, Icons.inventory_2_outlined, true)),
                   ]),
@@ -94,8 +95,9 @@ class _InventarioScreenState extends State<InventarioScreen> {
                 "id_prod": _idProd.text,
                 "Nombre": _nombre.text,
                 "Categoría": _categoria.text,
-                "Precio": double.parse(_precio.text),
-                "Stock": int.parse(_stock.text),
+                // Eliminamos comas de miles antes de parsear para evitar errores con decimales
+                "Precio": double.tryParse(_precio.text.replaceAll(',', '')) ?? 0.0,
+                "Stock": int.tryParse(_stock.text) ?? 0,
                 "Material": _material.text,
               };
               docId == null ? _db.collection('muebles').add(d) : _db.collection('muebles').doc(docId).update(d);
@@ -191,7 +193,7 @@ class _InventarioScreenState extends State<InventarioScreen> {
     );
   }
 
-  Widget _input(String l, TextEditingController c, IconData i, [bool n = false]) {
+  Widget _input(String l, TextEditingController c, IconData i, [bool n = false, bool d = false]) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Column(
@@ -200,7 +202,10 @@ class _InventarioScreenState extends State<InventarioScreen> {
           Text(l, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
           const SizedBox(height: 4),
           TextField(
-            controller: c, keyboardType: n ? TextInputType.number : TextInputType.text,
+            controller: c, 
+            keyboardType: d 
+                ? const TextInputType.numberWithOptions(decimal: true) 
+                : (n ? TextInputType.number : TextInputType.text),
             decoration: InputDecoration(
               prefixIcon: Icon(i, color: azulGris, size: 18),
               isDense: true,
@@ -234,12 +239,36 @@ class _InventarioScreenState extends State<InventarioScreen> {
               children: [
                 Text(title, style: const TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 5),
-                Text(value, style: TextStyle(color: azulGris, fontSize: 20, fontWeight: FontWeight.bold)),
+                Text(
+                  value.contains('\$') ? value : value, // El valor ya vendrá formateado
+                  style: TextStyle(color: azulGris, fontSize: 20, fontWeight: FontWeight.bold)
+                ),
               ],
             ),
           )
         ],
       ),
+    );
+  }
+
+  // --- AYUDANTE PARA TARJETAS EN WRAP ---
+  Widget _buildAdaptiveSummaryCard(BuildContext context, BoxConstraints constraints, String title, String value, IconData icon, Color color) {
+    // Calculamos el ancho: 
+    // - Si hay mucho espacio (> 1000): 3 columnas (aprox 30% cada una)
+    // - Si hay espacio medio (700-1000): 2 columnas (aprox 45% cada una)
+    // - Si es móvil (< 700): 1 columna (100%)
+    double cardWidth;
+    if (constraints.maxWidth > 1000) {
+      cardWidth = (constraints.maxWidth - 60) / 3;
+    } else if (constraints.maxWidth > 700) {
+      cardWidth = (constraints.maxWidth - 45) / 2;
+    } else {
+      cardWidth = constraints.maxWidth - 30;
+    }
+
+    return SizedBox(
+      width: cardWidth,
+      child: _summaryCard(title, value, icon, color),
     );
   }
 
@@ -261,7 +290,6 @@ class _InventarioScreenState extends State<InventarioScreen> {
         builder: (context, snapshot) {
           if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
 
-          // Cálculos para las tarjetas de resumen
           int totalProductos = snapshot.data!.docs.length;
           int alertasStock = 0;
           double valorTotal = 0;
@@ -269,43 +297,62 @@ class _InventarioScreenState extends State<InventarioScreen> {
           for (var doc in snapshot.data!.docs) {
             var item = doc.data() as Map<String, dynamic>;
             int stock = item['Stock'] ?? 0;
-            // Asegurar que el precio se maneje como double independientemente de si viene como int o double de Firebase
-            double precio = (item['Precio'] ?? 0).toDouble();
-            
+            double precio = (item['Precio'] ?? 0);
             if (stock <= 5) alertasStock++;
             valorTotal += (stock * precio);
           }
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Tarjetas de Resumen
-                Row(
-                  children: [
-                    Expanded(child: _summaryCard("Total Productos", "$totalProductos", Icons.inventory_2, Colors.blue)),
-                    const SizedBox(width: 15),
-                    Expanded(child: _summaryCard("Alertas Stock", "$alertasStock", Icons.warning_amber_rounded, Colors.orange)),
-                    const SizedBox(width: 15),
-                    Expanded(child: _summaryCard("Valor Inventario", "\$${valorTotal.toStringAsFixed(2)}", Icons.monetization_on, Colors.green)),
-                  ],
-                ),
-                const SizedBox(height: 25),
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              bool isMobile = constraints.maxWidth < 700;
 
-                // Contenedor principal de la tabla
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(15),
-                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Barra Superior de la Tabla
+              return SingleChildScrollView(
+                padding: const EdgeInsets.all(15),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // --- TARJETAS DE RESUMEN RESPONSIVAS (Usando Wrap para evitar aplastamiento) ---
+                    SizedBox(
+                      width: double.infinity,
+                      child: Wrap(
+                        spacing: 15,
+                        runSpacing: 15,
+                        alignment: WrapAlignment.start,
+                        children: [
+                          _buildAdaptiveSummaryCard(
+                            context,
+                            constraints,
+                            "Total Productos", 
+                            "$totalProductos", 
+                            Icons.inventory_2, 
+                            Colors.blue
+                          ),
+                          _buildAdaptiveSummaryCard(
+                            context,
+                            constraints,
+                            "Alertas Stock", 
+                            "$alertasStock", 
+                            Icons.warning_amber_rounded, 
+                            Colors.orange
+                          ),
+                          _buildAdaptiveSummaryCard(
+                            context,
+                            constraints,
+                            "Valor Inventario", 
+                            NumberFormat.simpleCurrency(decimalDigits: 2).format(valorTotal), 
+                            Icons.monetization_on, 
+                            Colors.green
+                          ),
+                        ],
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 25),
+
+                    // --- BARRA DE TÍTULO (Compartida o específica) ---
+                    if (isMobile)
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
                         decoration: BoxDecoration(
                           color: azulGris,
                           borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
@@ -313,54 +360,159 @@ class _InventarioScreenState extends State<InventarioScreen> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text("Catálogo de Muebles", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
+                            const Text("Catálogo", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
                             ElevatedButton.icon(
                               onPressed: () => _abrirFormulario(),
-                              icon: const Icon(Icons.add, size: 18),
-                              label: const Text("Agregar Mueble"),
-                              style: ElevatedButton.styleFrom(backgroundColor: Colors.green[600], foregroundColor: Colors.white),
+                              icon: const Icon(Icons.add, size: 16),
+                              label: const Text("Añadir", style: TextStyle(fontSize: 12)),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.green[600], 
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(horizontal: 12),
+                              ),
                             )
                           ],
                         ),
                       ),
-                      // La Tabla de Datos
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: DataTable(
-                          headingTextStyle: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
-                          columnSpacing: 40,
-                          columns: const [
-                            DataColumn(label: Text('Nombre')),
-                            DataColumn(label: Text('Categoría')),
-                            DataColumn(label: Text('Precio')),
-                            DataColumn(label: Text('Stock')),
-                            DataColumn(label: Text('Material')),
-                            DataColumn(label: Text('Acciones')),
-                          ],
-                          rows: snapshot.data!.docs.map<DataRow>((doc) {
-                            var item = doc.data() as Map<String, dynamic>;
-                            return DataRow(cells: [
-                              DataCell(Text(item['Nombre'] ?? '-')),
-                              DataCell(Text(item['Categoría'] ?? '-')),
-                              DataCell(Text('\$${item['Precio']}')),
-                              DataCell(_badgeStock(item['Stock'] ?? 0)),
-                              DataCell(Text(item['Material'] ?? '-')),
-                              DataCell(Row(children: [
-                                IconButton(icon: const Icon(Icons.edit, color: Colors.orange, size: 20), onPressed: () => _abrirFormulario(docId: doc.id, data: item)),
-                                IconButton(icon: const Icon(Icons.delete, color: Colors.red, size: 20), onPressed: () => _confirmarBorrado(doc.id, item)),
-                              ])),
-                            ]);
-                          }).toList(),
-                        ),
-                      ),
-                    ],
-                  ),
+
+                    // --- LISTADO DE PRODUCTOS (TABLA O TARJETAS) ---
+                    isMobile 
+                      ? Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(15)),
+                            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+                          ),
+                          child: _buildMobileList(snapshot.data!.docs),
+                        )
+                      : _buildDesktopTable(snapshot.data!.docs),
+                  ],
                 ),
-              ],
-            ),
+              );
+            }
           );
         },
       ),
     );
   }
-}
+
+  // --- VISTA PARA TABLET/PC (TABLA) ---
+  Widget _buildDesktopTable(List<QueryDocumentSnapshot> docs) {
+    return Center(
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: IntrinsicWidth( // Esto obliga a que los hijos tengan el mismo ancho
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // El encabezado ahora se estirará hasta el ancho máximo de la tabla
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                decoration: BoxDecoration(
+                  color: azulGris,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text("Catálogo de Productos", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
+                    const SizedBox(width: 40), 
+                    ElevatedButton.icon(
+                      onPressed: () => _abrirFormulario(),
+                      icon: const Icon(Icons.add, size: 18),
+                      label: const Text("Agregar Mueble", style: TextStyle(fontWeight: FontWeight.bold)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green[600], 
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+                      ),
+                    )
+                  ],
+                ),
+              ),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(15)),
+                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+                ),
+                child: DataTable(
+                  headingTextStyle: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
+                  columnSpacing: 40,
+                  columns: const [
+                    DataColumn(label: Text('Nombre')),
+                    DataColumn(label: Text('Categoría')),
+                    DataColumn(label: Text('Precio')),
+                    DataColumn(label: Text('Stock')),
+                    DataColumn(label: Text('Material')),
+                    DataColumn(label: Text('Acciones')),
+                  ],
+                  rows: docs.map<DataRow>((doc) {
+                    var item = doc.data() as Map<String, dynamic>;
+                    final double precio = (item['Precio'] ?? 0).toDouble();
+                    return DataRow(cells: [
+                      DataCell(Text(item['Nombre'] ?? '-')),
+                      DataCell(Text(item['Categoría'] ?? '-')),
+                      DataCell(Text(NumberFormat.simpleCurrency(decimalDigits: 2).format(precio))),
+                      DataCell(_badgeStock(item['Stock'] ?? 0)),
+                      DataCell(Text(item['Material'] ?? '-')),
+                      DataCell(Row(children: [
+                        IconButton(icon: const Icon(Icons.edit, color: Colors.orange, size: 20), onPressed: () => _abrirFormulario(docId: doc.id, data: item)),
+                        IconButton(icon: const Icon(Icons.delete, color: Colors.red, size: 20), onPressed: () => _confirmarBorrado(doc.id, item)),
+                      ])),
+                    ]);
+                  }).toList(),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // --- VISTA PARA CELULAR (TARJETAS) ---
+  Widget _buildMobileList(List<QueryDocumentSnapshot> docs) {
+    if (docs.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.all(40.0),
+        child: Center(child: Text("No hay productos registrados.")),
+      );
+    }
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: docs.length,
+      separatorBuilder: (context, index) => Divider(color: Colors.grey[200], height: 1),
+      itemBuilder: (context, index) {
+        var doc = docs[index];
+        var item = doc.data() as Map<String, dynamic>;
+        return ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+          title: Text(item['Nombre'] ?? '-', style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF2C3E50))),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 5),
+              Text("${item['Categoría'] ?? '-'} • ${item['Material'] ?? '-'}", style: TextStyle(color: Colors.blueGrey[600], fontSize: 13)),
+              const SizedBox(height: 5),
+              Text(
+                NumberFormat.simpleCurrency(decimalDigits: 2).format((item['Precio'] ?? 0).toDouble()), 
+                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 15)
+              ),
+            ],
+          ),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _badgeStock(item['Stock'] ?? 0),
+              const SizedBox(width: 5),
+              IconButton(icon: const Icon(Icons.edit, color: Colors.orange, size: 22), onPressed: () => _abrirFormulario(docId: doc.id, data: item)),
+              IconButton(icon: const Icon(Icons.delete, color: Colors.red, size: 22), onPressed: () => _confirmarBorrado(doc.id, item)),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}

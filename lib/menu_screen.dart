@@ -30,78 +30,85 @@ class MenuScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               // --- TARJETA DE BIENVENIDA CENTRADA (Estilo "Grimorio" mejorado) ---
-              Container(
-                width: MediaQuery.of(context).size.width * 0.85,
-                constraints: const BoxConstraints(maxWidth: 500),
-                padding: const EdgeInsets.all(40),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(30),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 30,
-                      offset: const Offset(0, 15),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    // Icono distintivo de la marca
-                    Container(
-                      padding: const EdgeInsets.all(15),
-                      decoration: BoxDecoration(
-                        color: azulGrisaceo.withOpacity(0.05),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.chair_outlined, size: 50, color: azulGrisaceo),
-                    ),
-                    const SizedBox(height: 25),
-                    Text(
-                      "Bienvenido al Panel de Gestión",
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.playfairDisplay(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: azulGrisaceo,
-                      ),
-                    ),
-                    const SizedBox(height: 15),
-                    Text(
-                      "Administra el catálogo de Mueblería Carrasco de forma eficiente y rápida.",
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.montserrat(
-                        fontSize: 14,
-                        color: Colors.blueGrey.withOpacity(0.7),
-                        height: 1.5,
-                      ),
-                    ),
-                    const SizedBox(height: 35),
-                    
-                    // BOTÓN DE ACCIÓN PRINCIPAL (Ir a Productos)
-                    SizedBox(
-                      width: double.infinity,
-                      height: 55,
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: azulGrisaceo,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                          elevation: 0,
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  double screenWidth = MediaQuery.of(context).size.width;
+                  double cardWidth = screenWidth < 600 ? screenWidth * 0.9 : screenWidth * 0.6;
+                  
+                  return Container(
+                    width: cardWidth,
+                    constraints: const BoxConstraints(maxWidth: 500),
+                    padding: const EdgeInsets.all(40),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(30),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 30,
+                          offset: const Offset(0, 15),
                         ),
-                        onPressed: () => context.go('/inventario'),
-                        icon: const Icon(Icons.inventory_2_outlined, color: Colors.white),
-                        label: const Text(
-                          "GESTIONAR INVENTARIO",
-                          style: TextStyle(
-                            color: Colors.white, 
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        // Icono distintivo de la marca
+                        Container(
+                          padding: const EdgeInsets.all(15),
+                          decoration: BoxDecoration(
+                            color: azulGrisaceo.withOpacity(0.05),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.chair_outlined, size: 50, color: azulGrisaceo),
+                        ),
+                        const SizedBox(height: 25),
+                        Text(
+                          "Bienvenido al Panel de Gestión",
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.playfairDisplay(
+                            fontSize: 28,
                             fontWeight: FontWeight.bold,
-                            letterSpacing: 1.2,
+                            color: azulGrisaceo,
                           ),
                         ),
-                      ),
+                        const SizedBox(height: 15),
+                        Text(
+                          "Administra el catálogo de Mueblería Carrasco de forma eficiente y rápida.",
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.montserrat(
+                            fontSize: 14,
+                            color: Colors.blueGrey.withOpacity(0.7),
+                            height: 1.5,
+                          ),
+                        ),
+                        const SizedBox(height: 35),
+                        
+                        // BOTÓN DE ACCIÓN PRINCIPAL (Ir a Productos)
+                        SizedBox(
+                          width: double.infinity,
+                          height: 55,
+                          child: ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: azulGrisaceo,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                              elevation: 0,
+                            ),
+                            onPressed: () => context.go('/inventario'),
+                            icon: const Icon(Icons.inventory_2_outlined, color: Colors.white),
+                            label: const Text(
+                              "GESTIONAR INVENTARIO",
+                              style: TextStyle(
+                                color: Colors.white, 
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  );
+                }
               ),
               
               const SizedBox(height: 40),
