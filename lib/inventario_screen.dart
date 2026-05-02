@@ -15,7 +15,6 @@ class _InventarioScreenState extends State<InventarioScreen> {
   final _db = FirebaseFirestore.instance;
   final Color azulGris = const Color(0xFF2C3E50);
 
-  final _idProd = TextEditingController();
   final _nombre = TextEditingController();
   final _categoria = TextEditingController();
   final _precio = TextEditingController();
@@ -36,14 +35,13 @@ class _InventarioScreenState extends State<InventarioScreen> {
 
   void _abrirFormulario({String? docId, Map<String, dynamic>? data}) {
     if (data != null) {
-      _idProd.text = data['id_prod'] ?? '';
       _nombre.text = data['Nombre'] ?? '';
       _categoria.text = data['Categoría'] ?? '';
       _precio.text = data['Precio'].toString();
       _stock.text = data['Stock'].toString();
       _material.text = data['Material'] ?? '';
     } else {
-      _idProd.clear(); _nombre.clear(); _categoria.clear(); _precio.clear(); _stock.clear(); _material.clear();
+      _nombre.clear(); _categoria.clear(); _precio.clear(); _stock.clear(); _material.clear();
     }
 
     showDialog(
@@ -92,7 +90,6 @@ class _InventarioScreenState extends State<InventarioScreen> {
             style: ElevatedButton.styleFrom(backgroundColor: Colors.green[700], foregroundColor: Colors.white),
             onPressed: () {
               final d = {
-                "id_prod": _idProd.text,
                 "Nombre": _nombre.text,
                 "Categoría": _categoria.text,
                 // Eliminamos comas de miles antes de parsear para evitar errores con decimales
@@ -515,4 +512,4 @@ class _InventarioScreenState extends State<InventarioScreen> {
       },
     );
   }
-}
+}
