@@ -1,8 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:intl/date_symbol_data_local.dart';
-import 'package:intl/intl.dart';
-import 'firebase_options.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
@@ -19,15 +15,8 @@ import 'client/client_product_detail_screen.dart';
 import 'client/client_account_screen.dart';
 import 'client/client_order_success_screen.dart';
 
-void main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-
-  await initializeDateFormatting('es_MX', null);
-  Intl.defaultLocale = 'es_MX';
-
   runApp(
     ChangeNotifierProvider(
       create: (context) => ThemeProvider(),

@@ -2,6 +2,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:intl/intl.dart';
+import 'firebase_options.dart';
 
 class PantallaSplash extends StatefulWidget {
   const PantallaSplash({super.key});
@@ -14,10 +18,39 @@ class _PantallaSplashState extends State<PantallaSplash> {
   @override
   void initState() {
     super.initState();
-    // Temporizador de 4 segundos antes de navegar al login
-    Timer(const Duration(seconds: 4), () {
-      if (mounted) context.go('/selection');
-    });
+    _initializeAndNavigate();
+  }
+
+  Future<void> _initializeAndNavigate() async {
+    final startTime = DateTime.now();
+
+    try {
+      // Inicializar Firebase en segundo plano sin congelar la app
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    } catch (e) {
+      debugPrint("Error al inicializar Firebase: $e");
+    }
+
+    try {
+      // Inicializar formato de fechas local
+      await initializeDateFormatting('es_MX', null);
+      Intl.defaultLocale = 'es_MX';
+    } catch (e) {
+      debugPrint("Error al inicializar localización: $e");
+    }
+
+    final elapsed = DateTime.now().difference(startTime);
+    const minimumDuration = Duration(seconds: 4);
+
+    if (elapsed < minimumDuration) {
+      await Future.delayed(minimumDuration - elapsed);
+    }
+
+    if (mounted) {
+      context.go('/selection');
+    }
   }
 
   @override
