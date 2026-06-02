@@ -16,7 +16,7 @@ class _PantallaSplashState extends State<PantallaSplash> {
     super.initState();
     // Temporizador de 4 segundos antes de navegar al login
     Timer(const Duration(seconds: 4), () {
-      if (mounted) context.go('/login');
+      if (mounted) context.go('/selection');
     });
   }
 
